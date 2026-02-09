@@ -34,25 +34,17 @@ test('notes index only shows the authenticated user notes', function () {
     $response->assertDontSee('Other Note');
 });
 
-test('authenticated users can view the create note page', function () {
-    $user = User::factory()->create();
-
-    $this->actingAs($user);
-
-    $this->get(route('notes.create'))->assertOk();
-});
-
 test('authenticated users can create a note', function () {
     $user = User::factory()->create();
 
     $this->actingAs($user);
 
-    Livewire::test('pages::notes.create')
+    Livewire::test('pages::notes.index')
+        ->call('startCreating')
         ->set('title', 'Test Note')
         ->set('content', 'Test content for the note.')
         ->call('createNote')
-        ->assertHasNoErrors()
-        ->assertRedirect(route('notes.index'));
+        ->assertHasNoErrors();
 
     expect($user->notes()->count())->toBe(1);
     expect($user->notes()->first()->title)->toBe('Test Note');
@@ -64,35 +56,16 @@ test('note creation allows empty title and content', function () {
 
     $this->actingAs($user);
 
-    Livewire::test('pages::notes.create')
+    Livewire::test('pages::notes.index')
+        ->call('startCreating')
         ->set('title', '')
         ->set('content', '')
         ->call('createNote')
-        ->assertHasNoErrors()
-        ->assertRedirect(route('notes.index'));
+        ->assertHasNoErrors();
 
     expect($user->notes()->count())->toBe(1);
     expect($user->notes()->first()->title)->toBeEmpty();
     expect($user->notes()->first()->content)->toBeEmpty();
-});
-
-test('authenticated users can view the edit note page', function () {
-    $user = User::factory()->create();
-    $note = Note::factory()->for($user)->create();
-
-    $this->actingAs($user);
-
-    $this->get(route('notes.edit', $note))->assertOk();
-});
-
-test('users cannot edit notes belonging to other users', function () {
-    $user = User::factory()->create();
-    $otherUser = User::factory()->create();
-    $note = Note::factory()->for($otherUser)->create();
-
-    $this->actingAs($user);
-
-    $this->get(route('notes.edit', $note))->assertForbidden();
 });
 
 test('authenticated users can update a note', function () {
@@ -101,7 +74,8 @@ test('authenticated users can update a note', function () {
 
     $this->actingAs($user);
 
-    Livewire::test('pages::notes.edit', ['note' => $note])
+    Livewire::test('pages::notes.index')
+        ->call('editNote', $note->id)
         ->set('title', 'Updated Title')
         ->set('content', 'Updated content.')
         ->call('updateNote')
@@ -119,7 +93,8 @@ test('note update allows empty title and content', function () {
 
     $this->actingAs($user);
 
-    Livewire::test('pages::notes.edit', ['note' => $note])
+    Livewire::test('pages::notes.index')
+        ->call('editNote', $note->id)
         ->set('title', '')
         ->set('content', '')
         ->call('updateNote')
@@ -129,6 +104,19 @@ test('note update allows empty title and content', function () {
 
     expect($note->title)->toBeEmpty();
     expect($note->content)->toBeEmpty();
+});
+
+test('users cannot edit notes belonging to other users', function () {
+    $user = User::factory()->create();
+    $otherUser = User::factory()->create();
+    $note = Note::factory()->for($otherUser)->create(['title' => 'Original Title']);
+
+    $this->actingAs($user);
+
+    Livewire::test('pages::notes.index')
+        ->call('editNote', $note->id);
+
+    expect($note->fresh()->title)->toBe('Original Title');
 });
 
 test('authenticated users can delete a note', function () {
