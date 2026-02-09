@@ -55,5 +55,16 @@
                 <flux:link :href="route('register')" wire:navigate>{{ __('Sign up') }}</flux:link>
             </div>
         @endif
+
+        @env('local')
+            <flux:separator text="or" />
+
+            <form method="POST" action="{{ route('dev.login') }}">
+                @csrf
+                <flux:button variant="filled" type="submit" class="w-full" data-test="dev-login-button">
+                    {{ __('Login as Test User') }}
+                </flux:button>
+            </form>
+        @endenv
     </div>
 </x-layouts::auth>
