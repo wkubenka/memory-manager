@@ -169,9 +169,7 @@ new class extends Component {
                                 {{ $note->title ?: __('Untitled') }}
                             </flux:heading>
                             @if ($note->content)
-                                <flux:subheading class="mt-1 truncate">
-                                    {{ Str::limit($note->content, 100) }}
-                                </flux:subheading>
+                                <flux:subheading class="mt-1">{!! nl2br(e($note->content)) !!}</flux:subheading>
                             @endif
                             <flux:text class="mt-2 text-xs">
                                 {{ $note->updated_at->diffForHumans() }}
