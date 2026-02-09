@@ -174,7 +174,7 @@ new class extends Component {
 
     @if ($creatingTodo)
         <form wire:submit="createTodo" class="mb-4 rounded-xl border border-neutral-200 p-4 space-y-4 dark:border-neutral-700">
-            <flux:input wire:model="title" :placeholder="__('Title')" type="text" autofocus />
+            <flux:input wire:model="title" :placeholder="__('Title')" type="text" x-init="$el.focus()" />
             <div class="flex gap-4">
                 <div class="flex-1">
                     <flux:input wire:model="dueDate" :label="__('Due date')" type="date" />
@@ -214,7 +214,7 @@ new class extends Component {
             @foreach ($activeTodos as $todo)
                 @if ($editingTodoId === $todo->id)
                     <form wire:submit="updateTodo" class="rounded-xl border border-neutral-200 p-4 space-y-4 dark:border-neutral-700">
-                        <flux:input wire:model="title" :placeholder="__('Title')" type="text" autofocus />
+                        <flux:input wire:model="title" :placeholder="__('Title')" type="text" x-init="$el.focus()" />
                         <div class="flex gap-4">
                             <div class="flex-1">
                                 <flux:input wire:model="dueDate" :label="__('Due date')" type="date" />

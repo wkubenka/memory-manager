@@ -130,7 +130,7 @@ new class extends Component {
 
     @if ($creatingNote)
         <form wire:submit="createNote" class="mb-4 rounded-xl border border-neutral-200 p-4 space-y-4 dark:border-neutral-700">
-            <flux:input wire:model="title" :placeholder="__('Title')" type="text" autofocus />
+            <flux:input wire:model="title" :placeholder="__('Title')" type="text" x-init="$el.focus()" />
             <flux:textarea wire:model="content" :placeholder="__('Content')" rows="4" />
             <div class="flex items-center justify-end gap-2">
                 <flux:button variant="ghost" wire:click="cancelEdit">{{ __('Cancel') }}</flux:button>
@@ -155,7 +155,7 @@ new class extends Component {
             @foreach ($notes as $note)
                 @if ($editingNoteId === $note->id)
                     <form wire:submit="updateNote" class="rounded-xl border border-neutral-200 p-4 space-y-4 dark:border-neutral-700">
-                        <flux:input wire:model="title" :placeholder="__('Title')" type="text" autofocus />
+                        <flux:input wire:model="title" :placeholder="__('Title')" type="text" x-init="$el.focus()" />
                         <flux:textarea wire:model="content" :placeholder="__('Content')" rows="4" />
                         <div class="flex items-center justify-end gap-2">
                             <flux:button variant="ghost" wire:click="cancelEdit">{{ __('Cancel') }}</flux:button>
