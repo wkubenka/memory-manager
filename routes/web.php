@@ -23,3 +23,4 @@ if (app()->isLocal()) {
 
 require __DIR__.'/settings.php';
 require __DIR__.'/notes.php';
+require __DIR__.'/todos.php';

@@ -57,6 +57,14 @@ class User extends Authenticatable
     }
 
     /**
+     * Get the todos for the user.
+     */
+    public function todos(): HasMany
+    {
+        return $this->hasMany(Todo::class);
+    }
+
+    /**
      * Get the user's initials
      */
     public function initials(): string

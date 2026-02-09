@@ -13,6 +13,9 @@
                 <flux:navbar.item icon="document-text" :href="route('notes.index')" :current="request()->routeIs('notes.*')" wire:navigate>
                     {{ __('Notes') }}
                 </flux:navbar.item>
+                <flux:navbar.item icon="check-circle" :href="route('todos.index')" :current="request()->routeIs('todos.*')" wire:navigate>
+                    {{ __('Todos') }}
+                </flux:navbar.item>
             </flux:navbar>
 
             <flux:spacer />
@@ -31,6 +34,9 @@
                 <flux:sidebar.group :heading="__('Platform')">
                     <flux:sidebar.item icon="document-text" :href="route('notes.index')" :current="request()->routeIs('notes.*')" wire:navigate>
                         {{ __('Notes') }}
+                    </flux:sidebar.item>
+                    <flux:sidebar.item icon="check-circle" :href="route('todos.index')" :current="request()->routeIs('todos.*')" wire:navigate>
+                        {{ __('Todos') }}
                     </flux:sidebar.item>
                 </flux:sidebar.group>
             </flux:sidebar.nav>
