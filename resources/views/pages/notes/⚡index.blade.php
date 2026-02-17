@@ -193,7 +193,10 @@ new class extends Component {
     @if ($creatingNote)
         <form wire:submit="createNote" class="mb-4 rounded-xl border border-neutral-200 p-4 space-y-4 dark:border-neutral-700">
             <flux:input wire:model="title" :placeholder="__('Title')" type="text" x-init="$el.focus()" />
-            <flux:textarea wire:model="content" :placeholder="__('Content')" rows="4" />
+            <flux:textarea wire:model="content" :placeholder="__('Content')" rows="4"
+                x-on:input="$el.style.height = 'auto'; $el.style.height = $el.scrollHeight + 'px'"
+                class="!overflow-hidden resize-none"
+            />
             <div class="flex items-center justify-end gap-2">
                 <flux:button variant="ghost" wire:click="cancelEdit">{{ __('Cancel') }}</flux:button>
                 <flux:button variant="primary" type="submit">{{ __('Save') }}</flux:button>
