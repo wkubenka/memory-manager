@@ -4,9 +4,7 @@ use App\Models\User;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Route;
 
-Route::get('/', function () {
-    return redirect()->route('notes.index');
-})->name('home');
+Route::view('/', 'welcome')->name('home');
 
 if (app()->isLocal()) {
     Route::post('dev/login', function () {
