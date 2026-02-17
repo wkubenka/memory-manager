@@ -1,0 +1,10 @@
+/.git
+/node_modules
+/vendor
+/tests
+/.claude
+/.vscode
+/.idea
+/.env
+/.env.backup
+/.env.production
