@@ -91,13 +91,72 @@ new class extends Component {
     }
 
     /**
+     * Toggle pin status for a note.
+     */
+    public function togglePin(int $noteId): void
+    {
+        $note = Auth::user()->notes()->find($noteId);
+
+        if (! $note) {
+            return;
+        }
+
+        if ($note->isPinned()) {
+            $note->update(['pin_order' => null]);
+            $this->resequencePinnedNotes();
+        } else {
+            $maxOrder = Auth::user()->notes()->whereNotNull('pin_order')->max('pin_order');
+            $note->update(['pin_order' => ($maxOrder ?? -1) + 1]);
+        }
+    }
+
+    /**
+     * Handle drag-and-drop reordering of pinned notes.
+     */
+    public function reorderPinnedNotes(int $id, int $position): void
+    {
+        $note = Auth::user()->notes()->find($id);
+
+        if (! $note || ! $note->isPinned()) {
+            return;
+        }
+
+        $pinnedNotes = Auth::user()->notes()
+            ->whereNotNull('pin_order')
+            ->where('id', '!=', $id)
+            ->orderBy('pin_order')
+            ->get();
+
+        $pinnedNotes->splice($position, 0, [$note]);
+
+        foreach ($pinnedNotes as $index => $pinnedNote) {
+            $pinnedNote->update(['pin_order' => $index]);
+        }
+    }
+
+    /**
+     * Resequence all pinned notes to maintain contiguous ordering.
+     */
+    private function resequencePinnedNotes(): void
+    {
+        Auth::user()->notes()
+            ->whereNotNull('pin_order')
+            ->orderBy('pin_order')
+            ->get()
+            ->each(fn (Note $note, int $index) => $note->update(['pin_order' => $index]));
+    }
+
+    /**
      * Get the user's notes.
      *
      * @return array<string, mixed>
      */
     public function with(): array
     {
-        $query = Auth::user()->notes()->latest();
+        $query = Auth::user()->notes()
+            ->orderByRaw('pin_order IS NULL')
+            ->orderBy('pin_order')
+            ->orderBy('created_at', 'desc');
 
         if ($this->search !== '') {
             $query->where(function ($q) {
@@ -106,8 +165,11 @@ new class extends Component {
             });
         }
 
+        $notes = $query->get();
+
         return [
-            'notes' => $query->get(),
+            'pinnedNotes' => $notes->filter(fn (Note $note) => $note->isPinned())->values(),
+            'unpinnedNotes' => $notes->filter(fn (Note $note) => ! $note->isPinned())->values(),
         ];
     }
 }; ?>
@@ -139,7 +201,7 @@ new class extends Component {
         </form>
     @endif
 
-    @if ($notes->isEmpty() && ! $creatingNote)
+    @if ($pinnedNotes->isEmpty() && $unpinnedNotes->isEmpty() && ! $creatingNote)
         <div class="rounded-xl border border-neutral-200 p-8 text-center dark:border-neutral-700">
             <flux:heading>{{ __('No notes yet') }}</flux:heading>
             <flux:subheading>{{ __('Create your first note to get started.') }}</flux:subheading>
@@ -150,11 +212,80 @@ new class extends Component {
                 </flux:button>
             </div>
         </div>
-    @elseif ($notes->isNotEmpty())
-        <div class="space-y-4">
-            @foreach ($notes as $note)
+    @endif
+
+    @if ($pinnedNotes->isNotEmpty())
+        <div class="space-y-4" wire:sort="reorderPinnedNotes">
+            @foreach ($pinnedNotes as $note)
+                <div wire:key="{{ $note->id }}" wire:sort:item="{{ $note->id }}">
+                    @if ($editingNoteId === $note->id)
+                        <form wire:submit="updateNote" class="rounded-xl border border-neutral-200 bg-neutral-50 p-4 space-y-4 dark:border-neutral-700 dark:bg-neutral-800/50">
+                            <flux:input wire:model="title" :placeholder="__('Title')" type="text" x-init="$el.focus()" />
+                            <flux:textarea wire:model="content" :placeholder="__('Content')" rows="4" />
+                            <div class="flex items-center justify-end gap-2">
+                                <flux:button variant="ghost" wire:click="cancelEdit">{{ __('Cancel') }}</flux:button>
+                                <flux:button variant="primary" type="submit">{{ __('Save') }}</flux:button>
+                            </div>
+                        </form>
+                    @else
+                        <div class="flex items-start gap-3 rounded-xl border border-neutral-200 bg-neutral-50 p-4 dark:border-neutral-700 dark:bg-neutral-800/50">
+                            <div wire:sort:handle class="flex items-center pt-0.5 cursor-grab text-neutral-400">
+                                <flux:icon name="bars-2" variant="mini" />
+                            </div>
+
+                            <div class="flex-1 min-w-0 cursor-pointer" wire:click="editNote({{ $note->id }})">
+                                <flux:heading>
+                                    {{ $note->title ?: __('Untitled') }}
+                                </flux:heading>
+                                @if ($note->content)
+                                    <flux:subheading class="mt-1">{!! nl2br(e($note->content)) !!}</flux:subheading>
+                                @endif
+                                <flux:text class="mt-2 text-xs">
+                                    {{ $note->updated_at->diffForHumans() }}
+                                </flux:text>
+                            </div>
+
+                            <div class="flex items-center gap-2 ms-4" wire:sort:ignore>
+                                <flux:button variant="ghost" size="sm" wire:click="togglePin({{ $note->id }})" icon="pin-off" />
+                                <flux:button variant="ghost" size="sm" wire:click="editNote({{ $note->id }})" icon="pencil" />
+
+                                <flux:modal.trigger :name="'confirm-note-deletion-' . $note->id">
+                                    <flux:button variant="ghost" size="sm" icon="trash" data-test="delete-note-button" />
+                                </flux:modal.trigger>
+
+                                <flux:modal :name="'confirm-note-deletion-' . $note->id" focusable class="max-w-lg">
+                                    <div class="space-y-6">
+                                        <div>
+                                            <flux:heading size="lg">{{ __('Delete note') }}</flux:heading>
+                                            <flux:subheading>
+                                                {{ __('Are you sure you want to delete this note? This action cannot be undone.') }}
+                                            </flux:subheading>
+                                        </div>
+
+                                        <div class="flex justify-end space-x-2 rtl:space-x-reverse">
+                                            <flux:modal.close>
+                                                <flux:button variant="filled">{{ __('Cancel') }}</flux:button>
+                                            </flux:modal.close>
+
+                                            <flux:button variant="danger" wire:click="deleteNote({{ $note->id }})" data-test="confirm-delete-note-button">
+                                                {{ __('Delete') }}
+                                            </flux:button>
+                                        </div>
+                                    </div>
+                                </flux:modal>
+                            </div>
+                        </div>
+                    @endif
+                </div>
+            @endforeach
+        </div>
+    @endif
+
+    @if ($unpinnedNotes->isNotEmpty())
+        <div class="space-y-4 {{ $pinnedNotes->isNotEmpty() ? 'mt-4' : '' }}">
+            @foreach ($unpinnedNotes as $note)
                 @if ($editingNoteId === $note->id)
-                    <form wire:submit="updateNote" class="rounded-xl border border-neutral-200 p-4 space-y-4 dark:border-neutral-700">
+                    <form wire:key="{{ $note->id }}" wire:submit="updateNote" class="rounded-xl border border-neutral-200 p-4 space-y-4 dark:border-neutral-700">
                         <flux:input wire:model="title" :placeholder="__('Title')" type="text" x-init="$el.focus()" />
                         <flux:textarea wire:model="content" :placeholder="__('Content')" rows="4" />
                         <div class="flex items-center justify-end gap-2">
@@ -163,7 +294,7 @@ new class extends Component {
                         </div>
                     </form>
                 @else
-                    <div class="flex items-start justify-between rounded-xl border border-neutral-200 p-4 dark:border-neutral-700">
+                    <div wire:key="{{ $note->id }}" class="flex items-start justify-between rounded-xl border border-neutral-200 p-4 ps-12 dark:border-neutral-700">
                         <div class="flex-1 min-w-0 cursor-pointer" wire:click="editNote({{ $note->id }})">
                             <flux:heading>
                                 {{ $note->title ?: __('Untitled') }}
@@ -177,6 +308,7 @@ new class extends Component {
                         </div>
 
                         <div class="flex items-center gap-2 ms-4">
+                            <flux:button variant="ghost" size="sm" wire:click="togglePin({{ $note->id }})" icon="pin" />
                             <flux:button variant="ghost" size="sm" wire:click="editNote({{ $note->id }})" icon="pencil" />
 
                             <flux:modal.trigger :name="'confirm-note-deletion-' . $note->id">

@@ -23,4 +23,14 @@ class NoteFactory extends Factory
             'content' => fake()->paragraphs(3, true),
         ];
     }
+
+    /**
+     * Indicate that the note is pinned.
+     */
+    public function pinned(int $order = 0): static
+    {
+        return $this->state(fn (array $attributes): array => [
+            'pin_order' => $order,
+        ]);
+    }
 }

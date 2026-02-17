@@ -18,10 +18,12 @@ class NoteSeeder extends Seeder
             [
                 'title' => 'Project Ideas',
                 'content' => "Build a personal finance tracker\nCreate a recipe sharing app\nMake a habit tracker with streaks",
+                'pin_order' => 0,
             ],
             [
                 'title' => 'Meeting Notes - Feb 10',
                 'content' => "Discussed Q1 roadmap priorities.\nAgreed to ship the new dashboard by end of month.\nNeed to follow up with design team on the onboarding flow.",
+                'pin_order' => 1,
             ],
             [
                 'title' => 'Books to Read',

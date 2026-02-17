@@ -186,3 +186,128 @@ test('empty search shows all notes', function () {
         ->assertSee('First Note')
         ->assertSee('Second Note');
 });
+
+test('pinned notes appear before unpinned notes', function () {
+    $user = User::factory()->create();
+
+    Note::factory()->for($user)->create(['title' => 'Unpinned Note']);
+    Note::factory()->for($user)->pinned(0)->create(['title' => 'Pinned Note']);
+
+    $this->actingAs($user);
+
+    $this->get(route('notes.index'))
+        ->assertOk()
+        ->assertSeeInOrder(['Pinned Note', 'Unpinned Note']);
+});
+
+test('user can pin a note', function () {
+    $user = User::factory()->create();
+    $note = Note::factory()->for($user)->create();
+
+    $this->actingAs($user);
+
+    Livewire::test('pages::notes.index')
+        ->call('togglePin', $note->id);
+
+    expect($note->fresh()->pin_order)->toBe(0);
+});
+
+test('user can unpin a pinned note', function () {
+    $user = User::factory()->create();
+    $note = Note::factory()->for($user)->pinned(0)->create();
+
+    $this->actingAs($user);
+
+    Livewire::test('pages::notes.index')
+        ->call('togglePin', $note->id);
+
+    expect($note->fresh()->pin_order)->toBeNull();
+});
+
+test('pinning a note assigns the next available pin order', function () {
+    $user = User::factory()->create();
+
+    Note::factory()->for($user)->pinned(0)->create();
+    Note::factory()->for($user)->pinned(1)->create();
+    $newNote = Note::factory()->for($user)->create();
+
+    $this->actingAs($user);
+
+    Livewire::test('pages::notes.index')
+        ->call('togglePin', $newNote->id);
+
+    expect($newNote->fresh()->pin_order)->toBe(2);
+});
+
+test('unpinning a note resequences remaining pinned notes', function () {
+    $user = User::factory()->create();
+
+    $note0 = Note::factory()->for($user)->pinned(0)->create();
+    $note1 = Note::factory()->for($user)->pinned(1)->create();
+    $note2 = Note::factory()->for($user)->pinned(2)->create();
+
+    $this->actingAs($user);
+
+    Livewire::test('pages::notes.index')
+        ->call('togglePin', $note1->id);
+
+    expect($note0->fresh()->pin_order)->toBe(0);
+    expect($note1->fresh()->pin_order)->toBeNull();
+    expect($note2->fresh()->pin_order)->toBe(1);
+});
+
+test('pinned notes can be reordered', function () {
+    $user = User::factory()->create();
+
+    $noteA = Note::factory()->for($user)->pinned(0)->create(['title' => 'A']);
+    $noteB = Note::factory()->for($user)->pinned(1)->create(['title' => 'B']);
+    $noteC = Note::factory()->for($user)->pinned(2)->create(['title' => 'C']);
+
+    $this->actingAs($user);
+
+    Livewire::test('pages::notes.index')
+        ->call('reorderPinnedNotes', $noteC->id, 0);
+
+    expect($noteC->fresh()->pin_order)->toBe(0);
+    expect($noteA->fresh()->pin_order)->toBe(1);
+    expect($noteB->fresh()->pin_order)->toBe(2);
+});
+
+test('users cannot pin notes belonging to other users', function () {
+    $user = User::factory()->create();
+    $otherUser = User::factory()->create();
+    $note = Note::factory()->for($otherUser)->create();
+
+    $this->actingAs($user);
+
+    Livewire::test('pages::notes.index')
+        ->call('togglePin', $note->id);
+
+    expect($note->fresh()->pin_order)->toBeNull();
+});
+
+test('users cannot reorder notes belonging to other users', function () {
+    $user = User::factory()->create();
+    $otherUser = User::factory()->create();
+    $note = Note::factory()->for($otherUser)->pinned(0)->create();
+
+    $this->actingAs($user);
+
+    Livewire::test('pages::notes.index')
+        ->call('reorderPinnedNotes', $note->id, 2);
+
+    expect($note->fresh()->pin_order)->toBe(0);
+});
+
+test('pinned notes appear first in search results', function () {
+    $user = User::factory()->create();
+
+    Note::factory()->for($user)->create(['title' => 'Meeting Agenda']);
+    Note::factory()->for($user)->pinned(0)->create(['title' => 'Meeting Notes']);
+
+    $this->actingAs($user);
+
+    Livewire::test('pages::notes.index')
+        ->set('search', 'Meeting')
+        ->assertSeeInOrder(['Meeting Notes', 'Meeting Agenda']);
+});

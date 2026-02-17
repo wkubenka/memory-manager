@@ -19,7 +19,16 @@ class Note extends Model
     protected $fillable = [
         'title',
         'content',
+        'pin_order',
     ];
+
+    /**
+     * Determine if the note is pinned.
+     */
+    public function isPinned(): bool
+    {
+        return $this->pin_order !== null;
+    }
 
     /**
      * Get the user that owns the note.
