@@ -222,9 +222,38 @@ new class extends Component {
                         <form wire:submit="updateNote" class="rounded-xl border border-neutral-200 bg-neutral-50 p-4 space-y-4 dark:border-neutral-700 dark:bg-neutral-800/50">
                             <flux:input wire:model="title" :placeholder="__('Title')" type="text" x-init="$el.focus()" />
                             <flux:textarea wire:model="content" :placeholder="__('Content')" rows="4" />
-                            <div class="flex items-center justify-end gap-2">
-                                <flux:button variant="ghost" wire:click="cancelEdit">{{ __('Cancel') }}</flux:button>
-                                <flux:button variant="primary" type="submit">{{ __('Save') }}</flux:button>
+                            <div class="flex items-center justify-between">
+                                <div>
+                                    <flux:modal.trigger :name="'confirm-note-deletion-' . $note->id">
+                                        <flux:button variant="ghost" size="sm" icon="trash" data-test="delete-note-button" />
+                                    </flux:modal.trigger>
+
+                                    <flux:modal :name="'confirm-note-deletion-' . $note->id" focusable class="max-w-lg">
+                                        <div class="space-y-6">
+                                            <div>
+                                                <flux:heading size="lg">{{ __('Delete note') }}</flux:heading>
+                                                <flux:subheading>
+                                                    {{ __('Are you sure you want to delete this note? This action cannot be undone.') }}
+                                                </flux:subheading>
+                                            </div>
+
+                                            <div class="flex justify-end space-x-2 rtl:space-x-reverse">
+                                                <flux:modal.close>
+                                                    <flux:button variant="filled">{{ __('Cancel') }}</flux:button>
+                                                </flux:modal.close>
+
+                                                <flux:button variant="danger" wire:click="deleteNote({{ $note->id }})" data-test="confirm-delete-note-button">
+                                                    {{ __('Delete') }}
+                                                </flux:button>
+                                            </div>
+                                        </div>
+                                    </flux:modal>
+                                </div>
+
+                                <div class="flex items-center gap-2">
+                                    <flux:button variant="ghost" wire:click="cancelEdit">{{ __('Cancel') }}</flux:button>
+                                    <flux:button variant="primary" type="submit">{{ __('Save') }}</flux:button>
+                                </div>
                             </div>
                         </form>
                     @else
@@ -245,10 +274,25 @@ new class extends Component {
                                 </flux:text>
                             </div>
 
-                            <div class="flex items-center gap-2 ms-4" wire:sort:ignore>
+                            <div class="flex items-center ms-4" wire:sort:ignore>
                                 <flux:button variant="ghost" size="sm" wire:click="togglePin({{ $note->id }})" icon="pin-off" />
-                                <flux:button variant="ghost" size="sm" wire:click="editNote({{ $note->id }})" icon="pencil" />
+                            </div>
+                        </div>
+                    @endif
+                </div>
+            @endforeach
+        </div>
+    @endif
 
+    @if ($unpinnedNotes->isNotEmpty())
+        <div class="space-y-4 {{ $pinnedNotes->isNotEmpty() ? 'mt-4' : '' }}">
+            @foreach ($unpinnedNotes as $note)
+                @if ($editingNoteId === $note->id)
+                    <form wire:key="{{ $note->id }}" wire:submit="updateNote" class="rounded-xl border border-neutral-200 p-4 space-y-4 dark:border-neutral-700">
+                        <flux:input wire:model="title" :placeholder="__('Title')" type="text" x-init="$el.focus()" />
+                        <flux:textarea wire:model="content" :placeholder="__('Content')" rows="4" />
+                        <div class="flex items-center justify-between">
+                            <div>
                                 <flux:modal.trigger :name="'confirm-note-deletion-' . $note->id">
                                     <flux:button variant="ghost" size="sm" icon="trash" data-test="delete-note-button" />
                                 </flux:modal.trigger>
@@ -274,23 +318,11 @@ new class extends Component {
                                     </div>
                                 </flux:modal>
                             </div>
-                        </div>
-                    @endif
-                </div>
-            @endforeach
-        </div>
-    @endif
 
-    @if ($unpinnedNotes->isNotEmpty())
-        <div class="space-y-4 {{ $pinnedNotes->isNotEmpty() ? 'mt-4' : '' }}">
-            @foreach ($unpinnedNotes as $note)
-                @if ($editingNoteId === $note->id)
-                    <form wire:key="{{ $note->id }}" wire:submit="updateNote" class="rounded-xl border border-neutral-200 p-4 space-y-4 dark:border-neutral-700">
-                        <flux:input wire:model="title" :placeholder="__('Title')" type="text" x-init="$el.focus()" />
-                        <flux:textarea wire:model="content" :placeholder="__('Content')" rows="4" />
-                        <div class="flex items-center justify-end gap-2">
-                            <flux:button variant="ghost" wire:click="cancelEdit">{{ __('Cancel') }}</flux:button>
-                            <flux:button variant="primary" type="submit">{{ __('Save') }}</flux:button>
+                            <div class="flex items-center gap-2">
+                                <flux:button variant="ghost" wire:click="cancelEdit">{{ __('Cancel') }}</flux:button>
+                                <flux:button variant="primary" type="submit">{{ __('Save') }}</flux:button>
+                            </div>
                         </div>
                     </form>
                 @else
@@ -307,34 +339,8 @@ new class extends Component {
                             </flux:text>
                         </div>
 
-                        <div class="flex items-center gap-2 ms-4">
+                        <div class="flex items-center ms-4">
                             <flux:button variant="ghost" size="sm" wire:click="togglePin({{ $note->id }})" icon="pin" />
-                            <flux:button variant="ghost" size="sm" wire:click="editNote({{ $note->id }})" icon="pencil" />
-
-                            <flux:modal.trigger :name="'confirm-note-deletion-' . $note->id">
-                                <flux:button variant="ghost" size="sm" icon="trash" data-test="delete-note-button" />
-                            </flux:modal.trigger>
-
-                            <flux:modal :name="'confirm-note-deletion-' . $note->id" focusable class="max-w-lg">
-                                <div class="space-y-6">
-                                    <div>
-                                        <flux:heading size="lg">{{ __('Delete note') }}</flux:heading>
-                                        <flux:subheading>
-                                            {{ __('Are you sure you want to delete this note? This action cannot be undone.') }}
-                                        </flux:subheading>
-                                    </div>
-
-                                    <div class="flex justify-end space-x-2 rtl:space-x-reverse">
-                                        <flux:modal.close>
-                                            <flux:button variant="filled">{{ __('Cancel') }}</flux:button>
-                                        </flux:modal.close>
-
-                                        <flux:button variant="danger" wire:click="deleteNote({{ $note->id }})" data-test="confirm-delete-note-button">
-                                            {{ __('Delete') }}
-                                        </flux:button>
-                                    </div>
-                                </div>
-                            </flux:modal>
                         </div>
                     </div>
                 @endif
