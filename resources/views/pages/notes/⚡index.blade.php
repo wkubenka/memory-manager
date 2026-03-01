@@ -225,7 +225,7 @@ new class extends Component {
                         <form wire:submit="updateNote" class="rounded-xl border border-neutral-200 bg-neutral-50 p-4 space-y-4 dark:border-neutral-700 dark:bg-neutral-800/50">
                             <flux:input wire:model="title" :placeholder="__('Title')" type="text" x-init="$el.focus()" />
                             <flux:textarea wire:model="content" :placeholder="__('Content')" rows="2"
-                                x-init="$nextTick(() => { $el.style.height = 'auto'; $el.style.height = $el.scrollHeight + 'px' })"
+                                x-init="setTimeout(() => { $el.style.height = 'auto'; $el.style.height = $el.scrollHeight + 'px' })"
                                 x-on:input="$el.style.height = 'auto'; $el.style.height = $el.scrollHeight + 'px'"
                                 class="!overflow-hidden resize-none"
                             />
@@ -298,7 +298,7 @@ new class extends Component {
                     <form wire:key="{{ $note->id }}" wire:submit="updateNote" class="rounded-xl border border-neutral-200 p-4 space-y-4 dark:border-neutral-700">
                         <flux:input wire:model="title" :placeholder="__('Title')" type="text" x-init="$el.focus()" />
                         <flux:textarea wire:model="content" :placeholder="__('Content')" rows="2"
-                            x-init="$nextTick(() => { $el.style.height = 'auto'; $el.style.height = $el.scrollHeight + 'px' })"
+                            x-init="setTimeout(() => { $el.style.height = 'auto'; $el.style.height = $el.scrollHeight + 'px' })"
                             x-on:input="$el.style.height = 'auto'; $el.style.height = $el.scrollHeight + 'px'"
                             class="!overflow-hidden resize-none"
                         />
